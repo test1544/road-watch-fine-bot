@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,25 +13,43 @@ interface CCTVFeedProps {
 const CCTVFeed = ({ feedId, isActive, onViolationDetected }: CCTVFeedProps) => {
   const [isConnected, setIsConnected] = useState(true);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [animationFrame, setAnimationFrame] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { isModelReady, isProcessing, processFrame } = useMLDetection();
 
-  // Simulate different traffic scenes for each camera
-  const getTrafficScene = (feedId: number, frame: number) => {
-    const scenes = [
-      '🚗🏍️🚙', // Cars and motorcycles
-      '🚦🚗🚗🏍️', // Traffic light with vehicles
-      '🏍️🏍️🏍️🚗', // Multiple motorcycles
-      '🚛🚗🚙🏍️', // Mixed traffic
-      '🚗🚕🏍️', // City traffic
+  // Simulate different traffic scenarios for each camera
+  const getTrafficScenario = (feedId: number, frame: number) => {
+    const scenarios = [
+      {
+        road: 'intersection',
+        vehicles: [
+          { type: '🚗', x: 20 + (frame * 2) % 100, y: 60, hasHelmet: true },
+          { type: '🏍️', x: 80 - (frame * 3) % 80, y: 40, hasHelmet: false },
+          { type: '🚙', x: 40 + (frame * 1.5) % 60, y: 70, hasHelmet: true }
+        ],
+        trafficLight: frame % 120 < 40 ? '🔴' : frame % 120 < 80 ? '🟡' : '🟢'
+      },
+      {
+        road: 'highway',
+        vehicles: [
+          { type: '🚗', x: 10 + (frame * 4) % 120, y: 50, hasHelmet: true },
+          { type: '🏍️', x: 30 + (frame * 6) % 100, y: 45, hasHelmet: false },
+          { type: '🚛', x: 5 + (frame * 2) % 90, y: 65, hasHelmet: true }
+        ],
+        trafficLight: null
+      },
+      {
+        road: 'school_zone',
+        vehicles: [
+          { type: '🚗', x: 25 + (frame * 1) % 70, y: 55, hasHelmet: true },
+          { type: '🏍️', x: 60 + (frame * 5) % 80, y: 35, hasHelmet: false },
+          { type: '🏍️', x: 35 + (frame * 3) % 90, y: 55, hasHelmet: false }
+        ],
+        trafficLight: '🚸'
+      }
     ];
     
-    const vehicles = ['🚗', '🏍️', '🚙', '🚕', '🚛'];
-    const randomVehicles = Array.from({length: 3}, () => 
-      vehicles[Math.floor(Math.random() * vehicles.length)]
-    ).join('');
-    
-    return scenes[feedId % scenes.length] || randomVehicles;
+    return scenarios[feedId % scenarios.length] || scenarios[0];
   };
 
   useEffect(() => {
@@ -51,7 +68,8 @@ const CCTVFeed = ({ feedId, isActive, onViolationDetected }: CCTVFeedProps) => {
     if (isActive && isConnected) {
       const frameInterval = setInterval(() => {
         setCurrentFrame(prev => prev + 1);
-      }, 2000);
+        setAnimationFrame(prev => prev + 1);
+      }, 500); // Faster updates for smoother animation
 
       return () => clearInterval(frameInterval);
     }
@@ -95,7 +113,7 @@ const CCTVFeed = ({ feedId, isActive, onViolationDetected }: CCTVFeedProps) => {
     }
   }, [isActive, isConnected, isModelReady, feedId, processFrame, onViolationDetected]);
 
-  const currentScene = getTrafficScene(feedId, currentFrame);
+  const currentScenario = getTrafficScenario(feedId, animationFrame);
   const junctionTypes = ['Main St & 5th Ave', 'Highway Exit 12', 'School Zone', 'Commercial District', 'Residential Area', 'City Center'];
 
   return (
@@ -129,21 +147,56 @@ const CCTVFeed = ({ feedId, isActive, onViolationDetected }: CCTVFeedProps) => {
                 style={{ display: 'none' }}
               />
               
-              {/* Simulated video feed with traffic */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800">
-                {/* Road background */}
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gray-700 opacity-80"></div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1/3 bg-yellow-400 opacity-60"></div>
+              {/* Simulated realistic video feed */}
+              <div className="absolute inset-0 bg-gradient-to-b from-sky-200 via-sky-300 to-gray-600">
+                {/* Sky and background */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-blue-200 to-blue-300 opacity-80"></div>
                 
-                {/* Traffic scene */}
-                <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                  {currentScene}
+                {/* Buildings silhouette */}
+                <div className="absolute top-1/4 left-0 right-0 h-1/4 bg-gray-700 opacity-60" style={{
+                  clipPath: 'polygon(0 100%, 20% 80%, 40% 85%, 60% 70%, 80% 90%, 100% 75%, 100% 100%)'
+                }}></div>
+                
+                {/* Road surface */}
+                <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gray-600"></div>
+                
+                {/* Road markings */}
+                <div className="absolute bottom-12 left-0 right-0 flex justify-center space-x-8">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-8 h-1 bg-yellow-300"></div>
+                  ))}
                 </div>
                 
-                {/* Traffic light for some cameras */}
-                {feedId % 2 === 0 && (
-                  <div className="absolute top-2 right-2 text-red-500 text-lg">
-                    🚦
+                {/* Traffic light */}
+                {currentScenario.trafficLight && (
+                  <div className="absolute top-1/4 right-4 text-2xl">
+                    {currentScenario.trafficLight}
+                  </div>
+                )}
+                
+                {/* Animated vehicles */}
+                {currentScenario.vehicles.map((vehicle, index) => (
+                  <div
+                    key={index}
+                    className="absolute text-2xl transition-all duration-500 ease-linear"
+                    style={{
+                      left: `${vehicle.x}%`,
+                      top: `${vehicle.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    {vehicle.type}
+                    {/* Helmet detection indicator */}
+                    {vehicle.type === '🏍️' && !vehicle.hasHelmet && (
+                      <div className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full border border-white animate-pulse"></div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Speed detection box for some vehicles */}
+                {animationFrame % 100 < 10 && (
+                  <div className="absolute top-1/2 left-1/4 bg-red-500 bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                    SPEED: 85 km/h
                   </div>
                 )}
               </div>
@@ -167,6 +220,35 @@ const CCTVFeed = ({ feedId, isActive, onViolationDetected }: CCTVFeedProps) => {
                 <div className="w-2 h-2 bg-red-300 rounded-full animate-pulse"></div>
                 <span>LIVE</span>
               </div>
+              
+              {/* Detection bounding boxes */}
+              {isActive && isModelReady && animationFrame % 80 < 20 && (
+                <>
+                  <div className="absolute border-2 border-red-500 bg-red-500 bg-opacity-20" 
+                       style={{
+                         left: '25%',
+                         top: '45%',
+                         width: '8%',
+                         height: '12%'
+                       }}>
+                    <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-1 rounded">
+                      No Helmet 92%
+                    </div>
+                  </div>
+                  
+                  <div className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20" 
+                       style={{
+                         left: '60%',
+                         top: '55%',
+                         width: '12%',
+                         height: '8%'
+                       }}>
+                    <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-1 rounded">
+                      Vehicle 98%
+                    </div>
+                  </div>
+                </>
+              )}
               
               {/* Detection indicators */}
               {isActive && isModelReady && (
