@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +39,12 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isSystemActive]);
 
+  // Handle ML-detected violations
+  const handleViolationDetected = (violation: any) => {
+    console.log('New violation detected:', violation);
+    setViolations(prev => [violation, ...prev.slice(0, 9)]);
+  };
+
   const getViolationIcon = (type) => {
     switch (type) {
       case 'helmetless': return <Shield className="w-4 h-4" />;
@@ -67,7 +72,7 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Camera className="w-8 h-8 text-blue-400" />
-            <h1 className="text-3xl font-bold">Traffic Violation Detection System</h1>
+            <h1 className="text-3xl font-bold">AI Traffic Violation Detection System</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Badge variant={isSystemActive ? "default" : "secondary"} className="px-3 py-1">
@@ -87,7 +92,7 @@ const Index = () => {
           <Alert className="border-yellow-500 bg-yellow-500/10">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Traffic violation detection system is currently inactive. Click "Start System" to begin monitoring.
+              AI traffic violation detection system is currently inactive. Click "Start System" to begin monitoring.
             </AlertDescription>
           </Alert>
         )}
@@ -97,15 +102,20 @@ const Index = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Live CCTV Feeds */}
+          {/* Live CCTV Feeds with ML Integration */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold flex items-center space-x-2">
               <Camera className="w-5 h-5" />
-              <span>Live CCTV Feeds</span>
+              <span>AI-Powered CCTV Feeds</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2, 3, 4].map((feedId) => (
-                <CCTVFeed key={feedId} feedId={feedId} isActive={isSystemActive} />
+                <CCTVFeed 
+                  key={feedId} 
+                  feedId={feedId} 
+                  isActive={isSystemActive}
+                  onViolationDetected={handleViolationDetected}
+                />
               ))}
             </div>
           </div>
